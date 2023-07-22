@@ -1,0 +1,7 @@
+Target, Latitude(deg), Longitude(deg), Deviation(km)
+CoRec, -86.922031, 40.48287, 1.41
+BobRohrman, -86.832386, 40.418196, 6.91
+HorsieHospital, -86.910455, 40.417638, 8.67
+Dispatch, -86.934224, 40.411916, 1.22
+GooseIsland, -87.068756, 40.401326, 28.81
+Delphi, -86.669157, 40.587684, 37.09

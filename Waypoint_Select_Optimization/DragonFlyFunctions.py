@@ -57,7 +57,8 @@ def getClosest(altitudeOfInterest, altitude_array, arrayOfInterest):
     idx = (np.abs(altitude_array - altitudeOfInterest)).argmin()
     return arrayOfInterest[idx]
 
-def getSoundingDataAndTargetCoord(opt):
+
+def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
     """
     getSoundingDataAndTargetCoord - read and return all sounding data and target coordinate as valued arrays, given the option digit
 
@@ -71,7 +72,7 @@ def getSoundingDataAndTargetCoord(opt):
     wind_speed=[]
 
     #read sounding file and extract data
-    with open ("soundAndTarg/soundings/predict_" + opt + "_sound.txt", "r") as f:
+    with open ("NASA_sounding_data/soundings/predict_" + opt + "_sound.txt", "r") as f:
         next(f)
         winds_aloft = f.read().split('\n')
         for i in winds_aloft:
@@ -94,7 +95,12 @@ def getSoundingDataAndTargetCoord(opt):
     longitude = []
 
     #read target coordinate and extract data
-    with open ("soundAndTarg/targets/predict_" +  opt + "_targets.txt", "r") as f:
+    if useCustomWaypoints:
+        targetFileName = "WestLafayette_waypoints/targetsWL.txt"
+    else:
+        targetFileName = "NASA_sounding_data/targets/predict_" +  opt + "_targets.txt"
+
+    with open (targetFileName, "r") as f:
         next(f)
         waypointsRaw = f.read().split('\n')
         for i in waypointsRaw:
