@@ -299,7 +299,7 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
 
 
 
-def printResult(waypointSuccesses, opt):
+def printResult(waypointSuccesses, opt, useCustomWaypoints):
     """
     printResult - find the optimal waypoint coordinate (if any) and print the result onto the commandline
 
@@ -320,7 +320,12 @@ def printResult(waypointSuccesses, opt):
         optimal_waypoint_idx = waypointSuccesses[best_idx, 0]
 
         #read target coordinate and extract data
-        with open ("soundAndTarg/targets/predict_" +  opt + "_targets.txt", "r") as f:
+        if useCustomWaypoints:
+            targetFileName = "WestLafayette_waypoints/targetsWL.txt"
+        else:
+            targetFileName = "NASA_sounding_data/targets/predict_" +  opt + "_targets.txt"
+            
+        with open (targetFileName, "r") as f:
             next(f)
             waypointsRaw = f.read().split('\n')
             for i in waypointsRaw:
