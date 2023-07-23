@@ -63,6 +63,7 @@ def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
     getSoundingDataAndTargetCoord - read and return all sounding data and target coordinate as valued arrays, given the option digit
 
     :param opt: option digit ranging from 01 - 30
+    :param useCustomWaypoints: boolean variable indicating the program to use custom targeted waypoints
     :return: altitude_array, wind_velocity_array, waypoints_array (i.e., 6 target points)
     """ 
 
@@ -96,9 +97,9 @@ def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
 
     #read target coordinate and extract data
     if useCustomWaypoints:
-        targetFileName = "WestLafayette_waypoints/targetsWL.txt"
+        targetFileName = "Custom_waypoints/targetsWL.txt"
     else:
-        targetFileName = "NASA_sounding_data/targets/predict_" +  opt + "_targets.txt"
+        targetFileName = "NASA_waypoints/targets/predict_" +  opt + "_targets.txt"
 
     with open (targetFileName, "r") as f:
         next(f)
@@ -185,7 +186,7 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
     :param plotTraj: Boolean variable to show/hide the plots of predicted trajectories
     :return: describe what it returns
     """ 
-    earthRadius = 6378 * 1000 #m
+    earthRadius = 6371.1370 * 1000 #m
     timeStep = 1 #s
     margin = 250 #m
     groundLevel = 1223 #m
@@ -269,7 +270,7 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
             reachTarg = []
             if (np.linalg.norm(position[0:2]) <= margin):
                 #send waypoint to Pixhawk
-                waypointSuccesses.append([waypointIdx, position[2]])
+                waypointSuccesses.append([int(waypointIdx), position[2]])
                 reachTarg = position
 
                 if printTraj:
@@ -299,12 +300,15 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
 
 
 
-def printResult(waypointSuccesses, opt, useCustomWaypoints):
+def findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPositionLatLongAlt):
     """
-    printResult - find the optimal waypoint coordinate (if any) and print the result onto the commandline
+    findOptimalWaypoint - find the optimal waypoint coordinate (if any) and print the result onto the commandline
 
     :param waypointSuccesses: List of Reachable waypoints with corresponding index
     :param opt: option digit ranging from 01 - 30
+    :param useCustomWaypoints: boolean variable indicating the program to use custom targeted waypoints
+    :param currentPositionLatLongAlt: current positon of the node given from the Pixhawk Flight Controller's GPS data
+    :return: An optimal targeted waypoint
     """ 
 
     if waypointSuccesses is not None and np.size(waypointSuccesses) > 0:
@@ -313,17 +317,20 @@ def printResult(waypointSuccesses, opt, useCustomWaypoints):
         latitude = []
         longitude = []
         deviation = []
-        labels = np.array(["A", "B", "C", "D", "E", "F"])
+        labels = []
 
         #choose success waypoint that has highest remaining altitdue for loiter
-        best_idx = np.where(waypointSuccesses[:,1] == max(waypointSuccesses[:,1])) 
-        optimal_waypoint_idx = waypointSuccesses[best_idx, 0]
+        #waypointSucesses = [index_of_the_waypoints , altitude_when_reach_the_waypoint_radius]
+        highest_alt_idx = np.where(waypointSuccesses[:,1] == max(waypointSuccesses[:,1])) 
+        optimal_waypoint_idx = waypointSuccesses[highest_alt_idx, 0]
+        
+        print("Before", optimal_waypoint_idx)
 
         #read target coordinate and extract data
         if useCustomWaypoints:
-            targetFileName = "WestLafayette_waypoints/targetsWL.txt"
+            targetFileName = "Custom_waypoints/targetsWL.txt"
         else:
-            targetFileName = "NASA_sounding_data/targets/predict_" +  opt + "_targets.txt"
+            targetFileName = "NASA_waypoints/targets/predict_" +  opt + "_targets.txt"
             
         with open (targetFileName, "r") as f:
             next(f)
@@ -335,6 +342,7 @@ def printResult(waypointSuccesses, opt, useCustomWaypoints):
                 if len(array) < 4:
                     continue
 
+                labels.append(str(array[0]))
                 latitude.append(float(array[2]))
                 longitude.append(float(array[1]))
                 deviation.append(float(array[3]))
@@ -342,7 +350,30 @@ def printResult(waypointSuccesses, opt, useCustomWaypoints):
         latitude = np.array(latitude)
         longitude = np.array(longitude)
         deviation = np.array(deviation)
+
+        #if there are multiple optimal waypoints (with the same remainng altitude for loiter)
+        #then choose the closest waypoint to the current node coordinate
+        if len(optimal_waypoint_idx[0]) > 1:   
+            node_lat = currentPositionLatLongAlt[0]
+            node_lon = currentPositionLatLongAlt[1]
+            distance_node2waypoints = []
+
+            #find distance between each success waypoint to the node's position
+            for i in optimal_waypoint_idx[0]:
+                waypoint_lat = latitude[int(i)]
+                waypoint_lon = longitude[int(i)]
+
+                d = latlon2distance(node_lat, waypoint_lat, node_lon, waypoint_lon)
+                distance_node2waypoints.append(d)
+            
+            print("Distance", distance_node2waypoints)
+    
+            lowest_dist_idx = np.where(distance_node2waypoints == min(distance_node2waypoints))
+            optimal_waypoint_idx = optimal_waypoint_idx[0, lowest_dist_idx]
         
+        optimal_waypoint_idx = optimal_waypoint_idx[0,0]
+        print("After", optimal_waypoint_idx)
+
         #print result
         print("The optimal waypoint is", labels[optimal_waypoint_idx.astype(int)])
         print("Latitude: ", latitude[optimal_waypoint_idx.astype(int)])
@@ -351,3 +382,37 @@ def printResult(waypointSuccesses, opt, useCustomWaypoints):
 
     else:
         print("No optimal waypoint found at the current node's position.")
+    
+    return np.array([latitude[optimal_waypoint_idx.astype(int)], longitude[optimal_waypoint_idx.astype(int)]])
+
+
+def latlon2distance(lat1, lat2, lon1, lon2):
+    """
+    latlon2distance - find distance between two lat-lon coordinates in kilometer
+
+    :param lat1: latitude of point 1
+    :param lat2: latitude of point 2
+    :param lon1: longtitude of point 1
+    :param lon1: longtitude of point 2
+    :return: distance between two points in km.
+    """ 
+     
+    # The math module contains a function named
+    # radians which converts from degrees to radians.
+    lon1 = lon1 * np.pi / 180
+    lon2 = lon2 * np.pi / 180
+    lat1 = lat1 * np.pi / 180
+    lat2 = lat2 * np.pi / 180
+      
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+ 
+    c = 2 * np.arcsin(np.sqrt(a))
+    
+    # Radius of earth in kilometers.
+    r = 6371.1370 #km
+      
+    # calculate the result in km
+    return(c * r)

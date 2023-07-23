@@ -1,5 +1,3 @@
-# import os, psutil; print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-
 #!/usr/bin/env python3
 # run.py
 
@@ -22,7 +20,7 @@ License: Purdue University
 """
 
 #Connect to Pixhawk Flight Controller using Serial protocol
-vehicle = connect('/dev/serial0', wait_ready=True, baud=921600)
+# vehicle = connect('/dev/serial0', wait_ready=True, baud=921600)
 
 #Choose Test Case Number
 #opt = dff.getOption()
@@ -33,24 +31,29 @@ opt = "23"
 #             "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
 #             "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"]
 
-useCustomWaypoints = True  #use target waypoints from West Lafayette, IN >> Check
+useCustomWaypoints = True  #use target waypoints from "Custom_waypoints" folder
 altitude, wind_velocity, waypoints = dff.getSoundingDataAndTargetCoord(opt, useCustomWaypoints)
+
+print("all waypoints", waypoints)
 
 #Retrive predicted trajectory of the node
 predictedTrajectory = dff.getPredictedTrajectory()
 
 #Retrive the current GPS coordinate of node from Pixhawk Flight Controller via MAVLINK
 """ Here, we use a placeholder GPS coordinate to run the code"""
+# print("Global Loc", vehicle.location.global_frame)
+lat = 40.42001 #lat = vehicle.location.global_frame.lat
+lon = -86.92001 #lon = vehicle.location.global_frame.lon
+alt = 36000 #alt = vehicle.location.global_frame.alt
 
-lat = vehicle.location.global_frame.lat
-lon = vehicle.location.global_frame.lon
-#alt = vehicle.location.global_frame.alt
-alt = 36000
-initialPositionLatLongAlt = np.array([lat, lon, alt]) #Lat (deg), Long (deg), Atl (meters)
-print("Global Loc", vehicle.location.global_frame)
+currentPositionLatLongAlt = np.array([lat, lon, alt]) #Lat (deg), Long (deg), Atl (meters)
 
 #Simulate the node's trajectory to each targeted waypoint and select the best possible waypoint
 plotTraj = False
 printTraj = False
-waypointSuccesses = optimal_waypoint = dff.simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPositionLatLongAlt, plotTraj, printTraj)
-dff.printResult(waypointSuccesses, opt, useCustomWaypoints)
+waypointSuccesses = dff.simulate(altitude, wind_velocity, predictedTrajectory, waypoints, currentPositionLatLongAlt, plotTraj, printTraj)
+print("success", waypointSuccesses)
+optimalWaypoint = dff.findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPositionLatLongAlt)
+print("optimal", optimalWaypoint)
+
+
