@@ -22,7 +22,7 @@ try:
         if GPIO.input(25) == GPIO.LOW: # if port 25 == 0 (Falling edge to the ground)
             vehicle.send_mavlink(msg) # send command to servo in order to deploy the node
 
-        sleep(1.1)         # wait 1.1 seconds  
+        sleep(0.005)         # wait 1.1 seconds  
 
 finally:
     GPIO.cleanup()         # clean up after yourself  
