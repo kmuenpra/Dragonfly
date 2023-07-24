@@ -13,8 +13,9 @@ doJitter = False
 senseDeploy = False
 Deployed = False
 
-dff.deploymentCheck(vehicle)
-dff.jitterer()
+while True:
+    dff.deploymentCheck(vehicle)
+    dff.jitterer()
 
 # while True:
 

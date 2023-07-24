@@ -16,10 +16,11 @@ def deploymentCheck(vehicle):
 
     #Create "Move Servo" message command
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_REPEAT_SERVO, 0, 7, 2000, 1, 1, 0, 0, 0)
-    start = time.time()
-    timeLapse = time.time() - start
-    while timeLapse - start < 10:            # this will carry on until you hit CTRL+C  
-        timeLapse = time.time() - start
+    print("Message created")
+    start = time()
+    timeLapse = time() - start
+    while timeLapse < 10:            # this will carry on until you hit CTRL+C  
+        timeLapse = time() - start
         print(GPIO.input(25))
         if GPIO.input(25) == GPIO.LOW: # if port 25 == 0 (Falling edge to the ground)
             vehicle.send_mavlink(msg) # send command to servo in order to deploy the node
