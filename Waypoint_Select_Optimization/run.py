@@ -2,7 +2,7 @@
 # run.py
 
 #import statement
-import DragonFlyFunctions as dff
+import WaypointSelectFunctions as dff
 import numpy as np
 from dronekit import connect
 
