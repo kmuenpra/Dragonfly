@@ -80,4 +80,5 @@ def deployWings(vehicle):
 
 def chuteDeploy(vehicle):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 2000, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
     print("Deploying Chute")
