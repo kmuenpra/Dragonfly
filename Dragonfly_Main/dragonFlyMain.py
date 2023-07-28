@@ -1,4 +1,5 @@
 import DragonFlyFunctions as dff
+import run
 import RPi.GPIO as GPIO
 import numpy as np
 from dronekit import connect
@@ -42,23 +43,28 @@ while not Deployed:
 
     
     if doJitter:
-        dff.jitterer()
+        dff.jitterer(vehicle)
     if senseDeploy:
         Deployed = dff.deploymentCheck(vehicle)
 
 
 while Deployed:
 
-    
+
     if altitude > 9000 and (vehicle.gps_0.fix_type == 2 or vehicle.gps_0.fix_type == 3):
         print("Run Waypoint selection")
+        run()
+
         
 
     elif altitude <= 9000:
         print("Send waypoint to pixhawk")
+
         print("Change Flight Mode")
-        print("Deploy Wings")
-        print("Reel in Streamer")
+        
+        dff.deployWings(vehicle)
+        
+        dff.streamerRetract()
 
 while Gliding:
     if altitude < 300:
