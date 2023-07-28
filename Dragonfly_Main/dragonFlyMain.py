@@ -65,8 +65,7 @@ while Deployed:
         dff.deployWings(vehicle)
         
         dff.streamerRetract()
-
-while Gliding:
+        
     if altitude < 300:
         print("Chute Deploy")
         
