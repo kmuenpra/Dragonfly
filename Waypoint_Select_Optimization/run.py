@@ -41,11 +41,9 @@ predictedTrajectory = dff.getPredictedTrajectory()
 
 #Retrive the current GPS coordinate of node from Pixhawk Flight Controller via MAVLINK
 """ Here, we use a placeholder GPS coordinate to run the code"""
-# print("Global Loc", vehicle.location.global_frame)
 lat = 40.42001 #lat = vehicle.location.global_frame.lat
 lon = -86.92001 #lon = vehicle.location.global_frame.lon
 alt = 36000 #alt = vehicle.location.global_frame.alt
-
 currentPositionLatLongAlt = np.array([lat, lon, alt]) #Lat (deg), Long (deg), Atl (meters)
 
 #Simulate the node's trajectory to each targeted waypoint and select the best possible waypoint

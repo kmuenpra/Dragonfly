@@ -5,6 +5,7 @@
 #import statements
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 
 """
 Description: This script contains all user defined functions used in run.py
@@ -397,6 +398,7 @@ def latlon2distance(lat1, lat2, lon1, lon2):
     :return: distance between two points in km.
     """ 
      
+    
     # The math module contains a function named
     # radians which converts from degrees to radians.
     lon1 = lon1 * np.pi / 180
@@ -416,3 +418,30 @@ def latlon2distance(lat1, lat2, lon1, lon2):
       
     # calculate the result in km
     return(c * r)
+
+def getBalloonTrajectory():
+
+    #initialize array
+    cum_time = []
+    lat = []
+    long = []
+    alt = []
+
+    #read sounding file and extract data
+    with open ("Sample_Balloon_Trajectory/20230724-004100Z_34.0297_255.3083_standard_profile_2023072318Z", "r") as f:
+        next(f)
+        dataRow = f.read().split('\n')
+        for i in dataRow:
+            array = i.split(",")
+
+            #Handling NaN value in dataset
+            if len(array) < 4:
+                continue
+            
+            dateAndTime = array[0, :-1]
+            dateAndTime = dateAndTime.split("T")
+            date = dateAndTime[0].split("-")
+            time = dateAndTime[1].split(":")
+
+
+
