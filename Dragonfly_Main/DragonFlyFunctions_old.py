@@ -73,8 +73,8 @@ def streamerRetract():
     GPIO.output(13, False)
     print("Streamer Retracted :)")
 
-def deployWings(vehicle,pwm):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 6, pwm, 0, 0, 0, 0, 0)
+def deployWings(vehicle):
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 6, 1000, 0, 0, 0, 0, 0)
     print("Deploying Wings")
     vehicle.send_mavlink(msg)
 
@@ -82,30 +82,3 @@ def chuteDeploy(vehicle):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 2000, 0, 0, 0, 0, 0)
     vehicle.send_mavlink(msg)
     print("Deploying Chute")
-
-def runMotorStreamer():
-    pin = 6			# PWM pin connected to LED
-    GPIO.setwarnings(False)			#disable warnings
-    GPIO.setmode(GPIO.BCM)		#set pin numbering system
-    GPIO.setup(pin,GPIO.OUT)
-    while True:
-        GPIO.output(pin, True)
-        print("True")
-        sleep(5)
-        GPIO.output(pin, False)
-        print("not True")
-        sleep(5)
-def nodeDeploymentTest(vehicle,pwm):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 5, pwm,0, 0, 0, 0, 0)
-    print("Deploying Node")
-    vehicle.send_mavlink(msg)
-
-def runMotorStreamer2(vehicle, pwm, waitTime):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 3, pwm,0, 0, 0, 0, 0)
-    msg1 = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 3, 0,0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-    print("Signal on")
-    sleep(waitTime)
-    vehicle.send_mavlink(msg1)
-    print("Signal off")
-    sleep(waitTime)
