@@ -325,7 +325,7 @@ def findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPosit
         highest_alt_idx = np.where(waypointSuccesses[:,1] == max(waypointSuccesses[:,1])) 
         optimal_waypoint_idx = waypointSuccesses[highest_alt_idx, 0]
         
-        print("Before", optimal_waypoint_idx)
+        #print("Before", optimal_waypoint_idx)
 
         #read target coordinate and extract data
         if useCustomWaypoints:
@@ -367,24 +367,28 @@ def findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPosit
                 d = latlon2distance(node_lat, waypoint_lat, node_lon, waypoint_lon)
                 distance_node2waypoints.append(d)
             
-            print("Distance", distance_node2waypoints)
+            #print("Distance", distance_node2waypoints)
     
             lowest_dist_idx = np.where(distance_node2waypoints == min(distance_node2waypoints))
             optimal_waypoint_idx = optimal_waypoint_idx[0, lowest_dist_idx]
         
         optimal_waypoint_idx = optimal_waypoint_idx[0,0]
-        print("After", optimal_waypoint_idx)
+        #print("After", optimal_waypoint_idx)
 
         #print result
-        print("The optimal waypoint is", labels[optimal_waypoint_idx.astype(int)])
-        print("Latitude: ", latitude[optimal_waypoint_idx.astype(int)])
-        print("Longtitude: ", longitude[optimal_waypoint_idx.astype(int)])
-        print("Deviation: ", deviation[optimal_waypoint_idx.astype(int)])
+        # print("The optimal waypoint is", labels[optimal_waypoint_idx.astype(int)])
+        # print("Latitude: ", latitude[optimal_waypoint_idx.astype(int)])
+        # print("Longtitude: ", longitude[optimal_waypoint_idx.astype(int)])
+        # print("Deviation: ", deviation[optimal_waypoint_idx.astype(int)])
+        
+        optimal_waypoint = np.array([latitude[optimal_waypoint_idx.astype(int)], longitude[optimal_waypoint_idx.astype(int)]])
+        return optimal_waypoint, True
 
     else:
-        print("No optimal waypoint found at the current node's position.")
+        # print("No optimal waypoint found at the current node's position.")
+        optimal_waypoint = np.array([1000,1000,0])
+        return optimal_waypoint, False
     
-    return np.array([latitude[optimal_waypoint_idx.astype(int)], longitude[optimal_waypoint_idx.astype(int)]])
 
 
 def latlon2distance(lat1, lat2, lon1, lon2):
@@ -442,6 +446,27 @@ def getBalloonTrajectory():
             dateAndTime = dateAndTime.split("T")
             date = dateAndTime[0].split("-")
             time = dateAndTime[1].split(":")
+
+
+def run(currentPositionLatLongAlt):
+    '''
+    node_position: array([lat, lon, alt])
+    '''
+    #Retrive predicted trajectory of the node
+    predictedTrajectory = getPredictedTrajectory()
+
+    #Get sounding data and targeted waypoints
+    opt = "23"
+    useCustomWaypoints = False  #use target waypoints from "Custom_waypoints" folder
+    altitude, wind_velocity, waypoints = getSoundingDataAndTargetCoord(opt, useCustomWaypoints)
+
+    #Simulate the node's trajectory to each targeted waypoint and select the best possible waypoint
+    plotTraj = False
+    printTraj = False
+    waypointSuccesses = simulate(altitude, wind_velocity, predictedTrajectory, waypoints, currentPositionLatLongAlt, plotTraj, printTraj)
+    
+    return findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPositionLatLongAlt)
+
 
 
 

@@ -51,7 +51,8 @@ plotTraj = False
 printTraj = False
 waypointSuccesses = dff.simulate(altitude, wind_velocity, predictedTrajectory, waypoints, currentPositionLatLongAlt, plotTraj, printTraj)
 print("success", waypointSuccesses)
-optimalWaypoint = dff.findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPositionLatLongAlt)
+optimalWaypoint, Reachable = dff.findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPositionLatLongAlt)
 print("optimal", optimalWaypoint)
+print("Reachable?", Reachable)
 
 
