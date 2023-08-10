@@ -88,6 +88,11 @@ def chuteDeploy(vehicle):
     vehicle.send_mavlink(msg)
     print("Deploying Chute")
 
+def chuteReset(vehicle):
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 1000, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+    print("Reseting Chute")
+
 def runMotorStreamer():
     pin = 6			# PWM pin connected to LED
     GPIO.setwarnings(False)			#disable warnings
