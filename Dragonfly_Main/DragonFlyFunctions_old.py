@@ -82,3 +82,32 @@ def chuteDeploy(vehicle):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 2000, 0, 0, 0, 0, 0)
     vehicle.send_mavlink(msg)
     print("Deploying Chute")
+
+def streamerRetract():
+    GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
+    GPIO.setup(13, GPIO.OUT) #set pin 13 as output
+
+    retractingTime = 20
+    print("Retracting Streamer")
+    start = time.time()
+    timeLapse = time.time() - start
+    while timeLapse < retractingTime:
+        
+        timeLapse = time.time() - start
+        GPIO.output(13, True)
+    
+    GPIO.output(13, False)
+    print("Streamer Retracted :)")
+
+def runMotorStreamer():
+    pin = 6			# PWM pin connected to LED
+    GPIO.setwarnings(False)			#disable warnings
+    GPIO.setmode(GPIO.BCM)		#set pin numbering system
+    GPIO.setup(pin,GPIO.OUT)
+    while True:
+        GPIO.output(pin, True)
+        print("True")
+        sleep(5)
+        GPIO.output(pin, False)
+        print("not True")
+        sleep(5)
