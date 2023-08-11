@@ -63,6 +63,23 @@ def initializeServos(vehicle):
     vehicle.parameters['SERVO7_REVERSED'] = 0
     vehicle.parameters['SERVO7_FUNCTION'] = 0
 
+def mountingCheck(vehicle):
+    GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
+    GPIO.setup(25, GPIO.IN)    # set GPIO25 as input (button)  
+
+    premountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 1500,0, 0, 0, 0, 0)
+    mountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 2000,0, 0, 0, 0, 0)
+    
+    preMount = False
+    mounted = False
+    if GPIO.input(25) == GPIO.LOW and preMount == False:
+        vehicle.send_mavlink(premountmsg)
+        preMount = True
+    elif GPIO.input(25) == GPIO.HIGH:
+        preMount = False
+        vehicle.send_mavlink(mountmsg)
+        return True
+
 def deploymentCheck(vehicle):
 
     GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  

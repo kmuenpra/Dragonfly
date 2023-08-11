@@ -41,6 +41,7 @@ dff.initializeServos(vehicle)
 
 
 # --- Intitalize loop control variable ---
+mounted = False
 deployed = False
 SuccessWaypointFound = False
 glide = False
@@ -94,6 +95,8 @@ altitude = altitudeSim(origAltitude)
 # disable all control surfaces for ascent
 dff.ascentSet(vehicle)
 
+while not mounted:
+    mounted = dff.mountingCheck(vehicle)
 # repeat until note senses deployment
 while not deployed:
     #[SIM]
