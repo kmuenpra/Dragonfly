@@ -2,18 +2,19 @@ import DragonFlyFunctions as dff
 import Waypoint_Select_Optimization.WaypointSelectFunctions as waypointSelect
 import RPi.GPIO as GPIO #for raspberryPi
 import numpy as np
-from dronekit import connect, LocationGlobal, VehicleMode
+from dronekit import connect, LocationGlobal, VehicleMode, Command, mavutil
 import time
 import adafruit_bme680
 import board
 
 
 # --- Initializing Optimal Waypoint (pre - launch) ---
-#Retrieve current position from GPS module
+# Retrieve current position from GPS module ***CHANGE TO L1***
 lat = 34.45538982594716
 lon = -104.7905032972698
 alt = 0
 optimalWaypoint = np.array([lat, lon, alt]) #Lat (deg), Long (deg), Atl (meters)
+
 
 # --- Initializing BME680 driver ---
 '''
@@ -34,14 +35,19 @@ vehicle = connect('/dev/serial0', wait_ready=True, baud=921600)
 print("Connected.")
 
 
+# --- Initialize Servo Parameters ---
+dff.initializeServos(vehicle)
+
 
 # --- Intitalize loop control variable ---
 doJitter = False
 senseDeploy = False
 Deployed = False
 SuccessWaypointFound = False
+glide = False
+dive = False
 
-#________________________________
+# --- FUNCTIONS --- 
 
 # print(vehicle.gps_0.fix_type)
 # GNSSfix Type:
@@ -52,17 +58,23 @@ SuccessWaypointFound = False
 # 4: GNSS + dead reckoning combined, 
 # 5: time only fix
 
+
+# FOR SIM, COMMENT OUT
 altitude = 0
 
-# During the ascend
+origAltitude = float(bme680.altitude)
+
+# --- Ascent ---
+dff.ascentSet(vehicle)
+
 while not Deployed:
 
     #[SIM]
     #Simulating Altitude Gain
     altitude = altitude + 100
     vehicle.location.global_frame.alt = altitude
-    # print("Current node's position:", vehicle.location.global_frame)
-    time.sleep(0.1)
+    print("Current node's position:", vehicle.location.global_frame)
+    time.sleep(1)
     #[SIM]
 
     #[REAL]
@@ -71,11 +83,11 @@ while not Deployed:
     '''
     #[REAL]
     
-    if altitude < 36000:
+    if altitude < 27430:
         doJitter = True
         senseDeploy = False
 
-    elif altitude >= 36000:
+    elif altitude >= 27430:
         doJitter = True
         senseDeploy = True
 
@@ -88,16 +100,23 @@ while not Deployed:
 print("Deployed!")
 #________________________________
 
-# During the initial Dive
+
+# --- Descent ---
 while Deployed:
+
+    if not dive:
+        dff.diveMode(vehicle)
+        dive = True
+
 
     #[SIM]
     #Simulating Altitude Gain
     altitude = altitude + 100
     vehicle.location.global_frame.alt = altitude
-    # print("Current node's position:", vehicle.location.global_frame)
-    time.sleep(0.1)
+    print("Current node's position:", vehicle.location.global_frame)
+    time.sleep(1)
     #[SIM]
+
 
     #[REAL]
     '''
@@ -106,7 +125,7 @@ while Deployed:
     #[REAL]
 
     if altitude > 9000 and (vehicle.gps_0.fix_type == 2 or vehicle.gps_0.fix_type == 3):
-        
+
         #Retrieve current position from GPS module
         node_lat = float(vehicle.location.global_frame.lat)
         node_lon = float(vehicle.location.global_frame.lon)
@@ -137,35 +156,41 @@ while Deployed:
         node_lon = float(vehicle.location.global_frame.lon)
         node_alt = float(vehicle.location.global_frame.alt)
 
-        dff.deployWings(vehicle)
-        time.sleep(2)
-
-        #Arm the vehicle
-        vehicle.armed = True
-
-        #Set Mode to Autonomous
-        vehicle.mode = VehicleMode("AUTO")
-
-        # Set the multiple LocationGlobal to head towards
+        # Interpolate two coordiantes to get multiple waypoints to navigate towards
         latitudes, longitudes, altitudes = dff.linearInterpolation(5, optimalWaypoint[0], optimalWaypoint[1], node_lat, node_lon, node_alt)
         
-        waypoint_locations = []
+        #Create LocationGlobal object
+        waypoints_locations = []
         for goto_lat, goto_lon, goto_alt in zip(latitudes, longitudes, altitudes):
-            waypoint_locations.append(LocationGlobal(goto_lat, goto_lon, goto_alt))
+            waypoints_locations.append(LocationGlobal(goto_lat, goto_lon, goto_alt))
 
-        #for location in waypoint_locations
-        vehicle.simple_goto()
+        #Upload new mission
+        cmds = vehicle.commands
 
+        print(" Clear any existing commands")
+        cmds.clear() 
+
+        print(" Define/add new commands.")
+        for waypoint in waypoints_locations:                                                                                                    #lat          #lon          #alt
+            cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, waypoint[0], waypoint[1], waypoint[2]))
+
+        print(" Upload new commands to vehicle")
+        cmds.upload()
+
+        if not glide:
+            dff.glideMode(vehicle)
+            dff.deployWings(vehicle)
+            glide = True
+
+            #Arm the vehicle
+            vehicle.armed = True
+
+            #Set Mode to Autonomous
+            vehicle.mode = VehicleMode("AUTO")
 
         
-        
-        # dff.streamerRetract()
-        
-    if altitude < 300:
-
-        print("Chute Deploy")
+    if altitude < 1000 + origAltitude:
         dff.chuteDeploy(vehicle)
+        print("Chute Deploy")
 
-
-        
 
