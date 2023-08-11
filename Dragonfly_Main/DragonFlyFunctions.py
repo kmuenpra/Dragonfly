@@ -67,16 +67,12 @@ def mountingCheck(vehicle):
     GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
     GPIO.setup(25, GPIO.IN)    # set GPIO25 as input (button)  
 
-    premountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 1500,0, 0, 0, 0, 0)
-    mountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 2000,0, 0, 0, 0, 0)
-    
-    preMount = False
-    mounted = False
-    if GPIO.input(25) == GPIO.LOW and preMount == False:
+    if GPIO.input(25) == GPIO.LOW:
+        premountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 1500,0, 0, 0, 0, 0)
         vehicle.send_mavlink(premountmsg)
-        preMount = True
+        return False
     elif GPIO.input(25) == GPIO.HIGH:
-        preMount = False
+        mountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 2000,0, 0, 0, 0, 0)
         vehicle.send_mavlink(mountmsg)
         return True
 
@@ -248,7 +244,7 @@ def chuteReset(vehicle):
 
 def nodeDeploymentTest(vehicle,pwm):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), pwm,0, 0, 0, 0, 0)
-    print("Deploying Node")
+    print("Moving Deployment to: " + pwm)
     vehicle.send_mavlink(msg)
 
 def linearInterpolation(num_of_points, target_lat, target_lon, current_lat, current_lon, current_alt):

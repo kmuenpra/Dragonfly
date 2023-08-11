@@ -39,6 +39,9 @@ print("Connected.")
 # --- Initialize Servo Parameters ---
 dff.initializeServos(vehicle)
 
+# disable all control surfaces for ascent
+dff.ascentSet(vehicle)
+
 
 # --- Intitalize loop control variable ---
 mounted = False
@@ -48,8 +51,6 @@ glide = False
 dive = False
 chute = False
 
-
-# --- FUNCTIONS --- 
 
 # print(vehicle.gps_0.fix_type)
 # GNSSfix Type:
@@ -77,9 +78,6 @@ def write():
     writer.writerow(float(bme680.altitude), node_lat, node_lon, node_alt, vehicle.velocity, vehicle.attitude, vehicle.battery, deployed, glide, dive, chute)
 
 
-# --- Ascent ---
-origAltitude = 1220     # altitude of Ft Sumner [m]
-
 # --- Simulate Altitude --- (COMMENT OUT)
 def altitudeSim(prev):
     if not deployed:
@@ -92,12 +90,22 @@ def altitudeSim(prev):
     return altitude
 altitude = altitudeSim(origAltitude)
 
-# disable all control surfaces for ascent
-dff.ascentSet(vehicle)
+
+# --- Mounting ---
+# NEED TO HAVE MOUNTING PINS IN
+GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
+GPIO.setup(25, GPIO.IN)    # set GPIO25 as input (button)  
+dff.nodeDeploymentTest(vehicle,1500)
 
 while not mounted:
-    mounted = dff.mountingCheck(vehicle)
-# repeat until note senses deployment
+    if GPIO.input(25) == GPIO.HIGH:
+        dff.nodeDeploymentTest(vehicle,2000)
+        mounted = True
+
+
+# --- Ascent ---
+origAltitude = 1220     # altitude of Ft Sumner [m]
+
 while not deployed:
     #[SIM]
     altitude = altitudeSim(altitude)
