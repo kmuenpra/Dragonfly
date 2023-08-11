@@ -1,12 +1,66 @@
 from site import check_enableusersite
 
-#import statement
-import adafruit_bme680
-import board
-import RPi.GPIO as GPIO  
-from dronekit import connect, mavutil
+# --- Import statements ---
+
+#import adafruit_bme680
+#import board
+#import RPi.GPIO as GPIO  
+from dronekit import connect, mavutil, VehicleMode
 from time import sleep, time     # this lets us have a time delay (see line 15) 
-import numpy as np
+#import numpy as np
+
+
+# --- Define Channels ---
+CHANNELS = {
+    'ElevonLeft': '1',
+    'ElevonRight': '2',
+    'RudderTop': '3',
+    'RudderBottom': '4',
+    'Deployment': '5',
+    'WingFolding': '6',
+    'Parachute': '7'
+}
+
+# --- Functions ---
+
+def initializeServos(vehicle):
+    # Left Elevon
+    vehicle.parameters['SERVO1_MIN'] = 1100
+    vehicle.parameters['SERVO1_MAX'] = 2000
+    vehicle.parameters['SERVO1_TRIM'] = 1380
+
+    # Right Elevon
+    vehicle.parameters['SERVO2_MIN'] = 1100
+    vehicle.parameters['SERVO2_MAX'] = 2000
+    vehicle.parameters['SERVO2_TRIM'] = 1380
+
+    # Top Rudder
+    vehicle.parameters['SERVO3_MIN'] = 1000
+    vehicle.parameters['SERVO3_MAX'] = 2000
+    vehicle.parameters['SERVO3_TRIM'] = 1310
+
+    # Bottom Rudder
+    vehicle.parameters['SERVO4_MIN'] = 1000
+    vehicle.parameters['SERVO4_MAX'] = 2000
+    vehicle.parameters['SERVO4_TRIM'] = 1310
+
+    # Deployment
+    vehicle.parameters['SERVO5_MIN'] = 1000
+    vehicle.parameters['SERVO5_MAX'] = 2000
+    vehicle.parameters['SERVO5_REVERSED'] = 0
+    vehicle.parameters['SERVO5_FUNCTION'] = 0
+
+    # Wing Folding
+    vehicle.parameters['SERVO6_MIN'] = 1000
+    vehicle.parameters['SERVO6_MAX'] = 2000
+    vehicle.parameters['SERVO6_REVERSED'] = 0
+    vehicle.parameters['SERVO6_FUNCTION'] = 0
+
+    # Parachute
+    vehicle.parameters['SERVO7_MIN'] = 1000
+    vehicle.parameters['SERVO7_MAX'] = 2000
+    vehicle.parameters['SERVO7_REVERSED'] = 0
+    vehicle.parameters['SERVO7_FUNCTION'] = 0
 
 def deploymentCheck(vehicle):
 
@@ -14,7 +68,7 @@ def deploymentCheck(vehicle):
     GPIO.setup(25, GPIO.IN)    # set GPIO25 as input (button)  
 
     #Create malvink message command to retract the small actuators (for deployment system)
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 5, 1000,0, 0, 0, 0, 0)
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 1000,0, 0, 0, 0, 0)
     
     start = time.time()
     timeLapse = time.time() - start
@@ -40,6 +94,85 @@ def deploymentCheck(vehicle):
     return False
 
 
+def ascentSet(vehicle):
+    
+    # requires elevons and rudder to be disabled
+    setElevonLeftFunction(vehicle,0)
+    setElevonRightFunction(vehicle,0)
+    setRudderTopFunction(vehicle,0)
+    setRudderBottomFunction(vehicle,0)
+
+    # set each to their trim condition
+    setElevonLeftPWM(vehicle, 'trim')     # left elevon
+    setElevonRightPWM(vehicle, 'trim')    # right elevon
+    setRudderTopPWM(vehicle, 'trim')      # top rudder
+    setRudderBottomPWM(vehicle, 'trim')   # bottom rudder
+
+
+def printElevonLeftFunction(vehicle):
+    print(vehicle.parameters['SERVO1_FUNCTION'])
+
+def setElevonLeftFunction(vehicle,mode):
+    vehicle.parameters['SERVO1_FUNCTION'] = mode
+
+def setElevonLeftPWM(vehicle,pwm):
+    # MAKE SURE SERVO1_FUNCTION IS 0 (DISABLED)
+    # run setElevonLeftFunction(vehicle,mode) = 0 if testing in isolation
+
+    if pwm == 'trim':
+        pwm = 1380
+
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonLeft']), pwm, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+def printElevonRightFunction(vehicle):
+    print(vehicle.parameters['SERVO2_FUNCTION'])
+
+def setElevonRightFunction(vehicle,mode):
+    vehicle.parameters['SERVO2_FUNCTION'] = mode
+
+def setElevonRightPWM(vehicle,pwm):
+    # MAKE SURE SERVO2_FUNCTION IS 0 (DISABLED)
+    # run setElevonRightFunction(vehicle,mode) = 0 if testing in isolation
+
+    if pwm == 'trim':
+        pwm = 1380
+    
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonRight']), pwm, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+def printRudderTopFunction(vehicle):
+    print(vehicle.parameters['SERVO3_FUNCTION'])
+
+def setRudderTopFunction(vehicle,mode):
+    vehicle.parameters['SERVO3_FUNCTION'] = mode
+
+def setRudderTopPWM(vehicle,pwm):
+    # MAKE SURE SERVO3_FUNCTION IS 0 (DISABLED)
+    # run setRudderTopFunction(vehicle,mode) = 0 if testing in isolation
+
+    if pwm == 'trim':
+        pwm = 1310
+
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderTop']), pwm, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+def printRudderBottomFunction(vehicle):
+    print(vehicle.parameters['SERVO4_FUNCTION'])
+
+def setRudderBottomFunction(vehicle,mode):
+    vehicle.parameters['SERVO4_FUNCTION'] = mode
+
+def setRudderBottomPWM(vehicle,pwm):
+    # MAKE SURE SERVO4_FUNCTION IS 0 (DISABLED)
+    # run setRudderBottomFunction(vehicle,mode) = 0 if testing in isolation
+
+    if pwm == 'trim':
+        pwm = 1310
+
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderBottom']), pwm, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
 
 def jitterer(vehicle):
     # Create sensor object, communicating over the board's default I2C bus
@@ -54,77 +187,116 @@ def jitterer(vehicle):
     print("\nTemperature: %0.1f C" % bme680.temperature)
 
     if bme680.temperature <= jitterTemp:
-        channels = [1,2,4,5,6]
-        pwm = [1600, 1600, 1600 , 1900, 1900]
-        for i in range(len(channels)):                                                                               #ch,     PWM,   Repeats, Delays
-            msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_REPEAT_SERVO, 0, channels[i],  pwm[i],   1,      0,    0, 0, 0)
-            #print("jittering on channel " + channels[i])
+        channels = [1,2,3,4,5,6]
+        pwmJitter = [1400, 1400, 1360, 1360, 1950, 1950]
+        pwmBase = [1380, 1380, 1310, 1310, 2000, 2000]
+        for i in range(len(channels)):                                                                          #ch,       PWM,  
+            msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, channels[i], pwmJitter[i],0,0,0,0,0)
             vehicle.send_mavlink(msg)
+            sleep(0.1)
+            msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, channels[i], pwmBase[i],0,0,0,0,0)
+            vehicle.send_mavlink(msg)
+            #print("jittering on channel " + channels[i])
             sleep(1)
 
-def streamerRetract():
-    GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
-    GPIO.setup(13, GPIO.OUT) #set pin 13 as output
-
-    retractingTime = 20
-    print("Retracting Streamer")
-    start = time.time()
-    timeLapse = time.time() - start
-    while timeLapse < retractingTime:
-        
-        timeLapse = time.time() - start
-        GPIO.output(13, True)
-    
-    GPIO.output(13, False)
-    print("Streamer Retracted :)")
-
 def deployWings(vehicle,pwm):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 6, pwm, 0, 0, 0, 0, 0)
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['WingFolding']), pwm, 0, 0, 0, 0, 0)
     print("Deploying Wings")
     vehicle.send_mavlink(msg)
 
 def chuteDeploy(vehicle):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 2000, 0, 0, 0, 0, 0)
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Parachute']), 2000, 0, 0, 0, 0, 0)
     vehicle.send_mavlink(msg)
     print("Deploying Chute")
 
 def chuteReset(vehicle):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 7, 1000, 0, 0, 0, 0, 0)
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Parchute']), 1000, 0, 0, 0, 0, 0)
     vehicle.send_mavlink(msg)
     print("Reseting Chute")
 
-def runMotorStreamer():
-    pin = 6			# PWM pin connected to LED
-    GPIO.setwarnings(False)			#disable warnings
-    GPIO.setmode(GPIO.BCM)		#set pin numbering system
-    GPIO.setup(pin,GPIO.OUT)
-    while True:
-        GPIO.output(pin, True)
-        print("True")
-        sleep(5)
-        GPIO.output(pin, False)
-        print("not True")
-        sleep(5)
-
 def nodeDeploymentTest(vehicle,pwm):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 5, pwm,0, 0, 0, 0, 0)
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), pwm,0, 0, 0, 0, 0)
     print("Deploying Node")
     vehicle.send_mavlink(msg)
 
-def runMotorStreamer2(vehicle, pwm, waitTime):
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 3, pwm,0, 0, 0, 0, 0)
-    msg1 = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 3, 0,0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-    print("Signal on")
-    sleep(waitTime)
-    vehicle.send_mavlink(msg1)
-    print("Signal off")
-    sleep(waitTime)
-
 def linearInterpolation(num_of_points, target_lat, target_lon, current_lat, current_lon, current_alt):
-
     latitudes = np.linspace(current_lat, target_lat, num_of_points)
     longitudes = (target_lon - current_lon)/(target_lat - current_lat)*(latitudes - current_lat) + current_lon
     altitudes = np.linspace(current_alt, 0 , num_of_points)
 
     return latitudes, longitudes, altitudes
+
+
+def diveBrake(vehicle):
+    # requires elevons and rudder to be disabled
+    vehicle.parameters['SERVO1_FUNCTION'] = 0
+    vehicle.parameters['SERVO2_FUNCTION'] = 0
+    vehicle.parameters['SERVO3_FUNCTION'] = 0
+    vehicle.parameters['SERVO4_FUNCTION'] = 0
+
+    # move left elevon up
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonLeft']), 1600, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+    # move right elevon down
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonRight']), 1600, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+    # move bottom rudder to the right
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderBottom']), 1000, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+    # move top rudder to the left
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderTop']), 1000, 0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
+
+
+def changeModes(vehicle, left, right, top, bottom):
+    vehicle.parameters['SERVO1_FUNCTION'] = left
+    vehicle.parameters['SERVO2_FUNCTION'] = right
+    vehicle.parameters['SERVO3_FUNCTION'] = top
+    vehicle.parameters['SERVO4_FUNCTION'] = bottom
+
+def aileronsMode(vehicle):
+    vehicle.parameters['SERVO1_FUNCTION'] = 4
+    vehicle.parameters['SERVO2_FUNCTION'] = 4
+    vehicle.parameters['SERVO3_FUNCTION'] = 0
+    vehicle.parameters['SERVO4_FUNCTION'] = 0
+
+    setRudderTopPWM(vehicle,'trim')
+    setRudderBottomPWM(vehicle,'trim')
+
+def diveMode(vehicle):
+    # left elevon (aileron function)
+    vehicle.parameters['SERVO1_REVERSED'] = 1
+    vehicle.parameters['SERVO1_FUNCTION'] = 4
+    
+    # right elevon (aileron function)
+    vehicle.parameters['SERVO2_REVERSED'] = 1
+    vehicle.parameters['SERVO2_FUNCTION'] = 4
+
+    # top rudder (aileron function)
+    vehicle.parameters['SERVO3_REVERSED'] = 1
+    vehicle.parameters['SERVO3_FUNCTION'] = 4
+
+    # bottom rudder (aileron function)
+    vehicle.parameters['SERVO4_REVERSED'] = 1
+    vehicle.parameters['SERVO4_FUNCTION'] = 4
+
+
+def glideMode(vehicle):
+    # right elevon
+    vehicle.parameters['SERVO1_REVERSED'] = 1
+    vehicle.parameters['SERVO1_FUNCTION'] = 78
+
+    # left elevon
+    vehicle.parameters['SERVO2_REVERSED'] = 0
+    vehicle.parameters['SERVO2_FUNCTION'] = 77
+
+    # top rudder
+    vehicle.parameters['SERVO3_REVERSED'] = 0
+    vehicle.parameters['SERVO3_FUNCTION'] = 21
+
+    # bottom rudder
+    vehicle.parameters['SERVO4_REVERSED'] = 1
+    vehicle.parameters['SERVO4_FUNCTION'] = 21
