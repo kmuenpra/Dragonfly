@@ -1,7 +1,7 @@
-from site import check_enableusersite
 
 # --- Import statements ---
 
+from site import check_enableusersite
 #import adafruit_bme680
 #import board
 #import RPi.GPIO as GPIO  
@@ -20,6 +20,7 @@ CHANNELS = {
     'WingFolding': '6',
     'Parachute': '7'
 }
+
 
 # --- Functions ---
 
@@ -95,7 +96,6 @@ def deploymentCheck(vehicle):
 
 
 def ascentSet(vehicle):
-    
     # requires elevons and rudder to be disabled
     setElevonLeftFunction(vehicle,0)
     setElevonRightFunction(vehicle,0)
@@ -240,31 +240,6 @@ def linearInterpolation(num_of_points, target_lat, target_lon, current_lat, curr
     altitudes = np.linspace(current_alt, 0 , num_of_points)
 
     return latitudes, longitudes, altitudes
-
-
-def diveBrake(vehicle):
-    # requires elevons and rudder to be disabled
-    vehicle.parameters['SERVO1_FUNCTION'] = 0
-    vehicle.parameters['SERVO2_FUNCTION'] = 0
-    vehicle.parameters['SERVO3_FUNCTION'] = 0
-    vehicle.parameters['SERVO4_FUNCTION'] = 0
-
-    # move left elevon up
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonLeft']), 1600, 0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-
-    # move right elevon down
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['ElevonRight']), 1600, 0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-
-    # move bottom rudder to the right
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderBottom']), 1000, 0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-
-    # move top rudder to the left
-    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderTop']), 1000, 0, 0, 0, 0, 0)
-    vehicle.send_mavlink(msg)
-
 
 def changeModes(vehicle, left, right, top, bottom):
     vehicle.parameters['SERVO1_FUNCTION'] = left
