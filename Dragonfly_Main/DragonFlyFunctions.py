@@ -187,17 +187,32 @@ def jitterer(vehicle):
     print("\nTemperature: %0.1f C" % bme680.temperature)
 
     if bme680.temperature <= jitterTemp:
-        channels = [1,2,3,4,5,6]
-        pwmJitter = [1400, 1400, 1360, 1360, 1950, 1950]
-        pwmBase = [1380, 1380, 1310, 1310, 2000, 2000]
-        for i in range(len(channels)):                                                                          #ch,       PWM,  
-            msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, channels[i], pwmJitter[i],0,0,0,0,0)
-            vehicle.send_mavlink(msg)
-            sleep(0.1)
-            msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, channels[i], pwmBase[i],0,0,0,0,0)
-            vehicle.send_mavlink(msg)
-            #print("jittering on channel " + channels[i])
-            sleep(1)
+        jitter(vehicle)
+
+def jitter(vehicle):
+    i = 0
+    trim = [1380, 1380, 1310, 1310, 2000, 1000]
+    pwm1 = [trim[0]+50, trim[1]+50, trim[2]+50, trim[3]+50, trim[4]-50, trim[5]+50]
+    pwm2 = [trim[0]-50, trim[1]-50, trim[2]-50, trim[3]-50, trim[4], trim[5]]
+    while i < 6:
+        msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, i+1, pwm1[i],0,0,0,0,0)
+        vehicle.send_mavlink(msg)
+        sleep(1)
+        msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, i+1, pwm2[i],0,0,0,0,0)
+        vehicle.send_mavlink(msg)
+        sleep(1)
+        i = i + 1
+
+def testJitter(vehicle):
+    vehicle.parameters['SERVO1_FUNCTION'] = 0
+    vehicle.parameters['SERVO2_FUNCTION'] = 0
+    vehicle.parameters['SERVO3_FUNCTION'] = 0
+    vehicle.parameters['SERVO4_FUNCTION'] = 0
+
+    i = 0
+    while i < 10:
+        jitter(vehicle)
+        i = i + 1
 
 def deployWings(vehicle,pwm):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['WingFolding']), pwm, 0, 0, 0, 0, 0)
