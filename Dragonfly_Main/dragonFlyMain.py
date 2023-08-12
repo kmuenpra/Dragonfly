@@ -1,33 +1,19 @@
 import DragonFlyFunctions as dff
 import Waypoint_Select_Optimization.WaypointSelectFunctions as waypointSelect
-import RPi.GPIO as GPIO #for raspberryPi
+#import RPi.GPIO as GPIO #for raspberryPi
 import numpy as np
 from dronekit import connect, LocationGlobal, VehicleMode, Command, mavutil
 import time
-import adafruit_bme680
-import board
-import csv
+#import csv
 
 
 # --- Initializing Optimal Waypoint (pre-launch) ---
-# Use best L-1 target
+# Use closest target from example (already given)
 lat = 34.350426
 lon = -104.659969
 alt = 0
 optimalWaypoint = np.array([lat, lon, alt]) #lat [deg], long [deg], alt [meters]
 
-
-# --- Initializing BME680 driver ---
-'''
-print("Initializing BME680 sensor...")
-# Create sensor object, communicating over the board's default I2C bus
-i2c = board.I2C()   # uses board.SCL and board.SDA
-bme680 = adafruit_bme680.Adafruit_BME680_I2C(i2c)
-
-# change this to match the location's pressure (hPa) at sea level
-bme680.sea_level_pressure = 1013.25
-print("Completed.")
-'''
 
 # --- Initializing Pixhawk Connection ---
 print("Connecting to Vehicle...")
@@ -43,13 +29,14 @@ dff.initializeServos(vehicle)
 dff.ascentSet(vehicle)
 
 
-# --- Intitalize loop control variable ---
+# --- Intitalize loop control variables ---
 mounted = False
 deployed = False
 SuccessWaypointFound = False
 glide = False
 dive = False
 chute = False
+falling = False
 
 
 # print(vehicle.gps_0.fix_type)
@@ -62,35 +49,39 @@ chute = False
 # 5: time only fix
 
 
-# --- Create Data File ---
+'''
+# --- Create Data File --- (doesn't currently work with PI autorun)
 # open the file in the write mode
 f = open('data.csv', 'w')
 
 # create the csv writer
 writer = csv.writer(f)
-writer.writerow('BME altitude', 'node lat', 'node long', 'node alt', 'velo', 'attitude', 'battery', 'deployed', 'glide', 'dive', 'chute')
+writer.writerow('node lat, node long, node alt, velo, attitude, battery, deployed, glide, dive, chute')
 
 # write a row to the csv file
 def write():
     node_lat = float(vehicle.location.global_frame.lat)
     node_lon = float(vehicle.location.global_frame.lon)
     node_alt = float(vehicle.location.global_frame.alt)
-    writer.writerow(float(bme680.altitude), node_lat, node_lon, node_alt, vehicle.velocity, vehicle.attitude, vehicle.battery, deployed, glide, dive, chute)
+    writer.writerow(node_lat,', ', node_lon,', ', node_alt,', ', vehicle.velocity,', ', vehicle.attitude,', ', vehicle.battery,', ', deployed,', ', glide,', ', dive,', ', chute)
+'''
 
 
-# --- Simulate Altitude --- (COMMENT OUT)
+# --- Simulate Altitude --- (REMOVE BEFORE FLIGHT)
+origAltitude = 1220     # altitude of Ft Sumner [m]
 def altitudeSim(prev):
     if not deployed:
         # add 1000 meters everytime altitude is called
         altitude = prev + 1000
     else:
+        # subtract 1000 meters everytime altitude called after deployment
         altitude = prev - 1000
 
-    print("Altitude: " + altitude)
+    print("Altitude: ", altitude)
     return altitude
-altitude = altitudeSim(origAltitude)
+altitude = origAltitude
 
-
+'''
 # --- Mounting ---
 # NEED TO HAVE MOUNTING PINS IN
 GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
@@ -101,27 +92,43 @@ while not mounted:
     if GPIO.input(25) == GPIO.HIGH:
         dff.nodeDeploymentTest(vehicle,2000)
         mounted = True
-
+'''
 
 # --- Ascent ---
-origAltitude = 1220     # altitude of Ft Sumner [m]
+origAltitude = 1400     # average altitude of New Mexico [m]
 
 while not deployed:
+    prevAltitude = altitude
+
     #[SIM]
     altitude = altitudeSim(altitude)
     #[SIM]
 
     #[REAL]
     '''
-    altitude = float(bme680.altitude)
+    # get altitude from GPS if it is not disconnected
+    if vehicle.gps_0.fix_type != 0:
+        altitude = vehicle.location.global_frame.alt
+
+        # if node hasn't deployed and altitude dropping, deploy parachute
+        if falling == True & altitude < prevAltitude & altitude < (1000 + origAltitude):
+            deployed = True
+            dff.chuteDeploy()
+            deployed = True
+        elif altitude < prevAltitude & altitude < (1000 + origAltitude):
+            falling = True
+        else:
+            falling = False
     '''
     #[REAL]
     
-    if altitude > 10000:
-        dff.jitterer(vehicle)
+    # alt when temperature drops below 0 in sounding files
+    if altitude > 6000:
+        dff.jitter(vehicle)
         deployed = dff.deploymentCheck(vehicle)
 
-    write()
+    # write()
+
     time.sleep(5) # change for actual flight
 
 print("Deployed!")
@@ -140,16 +147,19 @@ while deployed:
 
     #[REAL]
     '''
-    altitude = float(bme680.altitude)
+    # get altitude from GPS if it is not disconnected
+    if vehicle.gps_0.fix_type != 0:
+        altitude = vehicle.location.global_frame.alt
     '''
     #[REAL]
 
     if altitude > 9000 and (vehicle.gps_0.fix_type == 2 or vehicle.gps_0.fix_type == 3):
 
         #Retrieve current position from GPS module
-        node_lat = float(vehicle.location.global_frame.lat)
-        node_lon = float(vehicle.location.global_frame.lon)
-        node_alt = float(vehicle.location.global_frame.alt)
+        nodegps = vehicle.location.global_frame
+        node_lat = float(nodegps.lat)
+        node_lon = float(nodegps.lon)
+        node_alt = float(nodegps.alt)
         currentPositionLatLongAlt = np.array([node_lat, node_lon, node_alt]) #Lat (deg), Long (deg), Atl (meters)
 
         newOptimalWaypoint, Reachable = waypointSelect.run(currentPositionLatLongAlt)
@@ -207,14 +217,15 @@ while deployed:
             #Set Mode to Autonomous
             vehicle.mode = VehicleMode("AUTO")
 
-        
-    if altitude < 1000 + origAltitude:
+    
+    # deploy parachute at 500 meters (1600 ft) above original altitude (avg of NM)
+    if altitude < (500 + origAltitude):
         dff.chuteDeploy(vehicle)
-        print("Chute Deploy")
+        print("Chute Deployed")
 
-    write()
+    #write()
     time.sleep(5)
 
 
 # close the file
-f.close()
+#f.close()

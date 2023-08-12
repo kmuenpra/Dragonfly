@@ -2,12 +2,10 @@
 # --- Import statements ---
 
 from site import check_enableusersite
-#import adafruit_bme680
-#import board
-#import RPi.GPIO as GPIO  
+import RPi.GPIO as GPIO  
 from dronekit import connect, mavutil, VehicleMode
-from time import sleep, time     # this lets us have a time delay (see line 15) 
-#import numpy as np
+from time import sleep, time
+import numpy as np
 
 
 # --- Define Channels ---
@@ -63,18 +61,6 @@ def initializeServos(vehicle):
     vehicle.parameters['SERVO7_REVERSED'] = 0
     vehicle.parameters['SERVO7_FUNCTION'] = 0
 
-def mountingCheck(vehicle):
-    GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
-    GPIO.setup(25, GPIO.IN)    # set GPIO25 as input (button)  
-
-    if GPIO.input(25) == GPIO.LOW:
-        premountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 1500,0, 0, 0, 0, 0)
-        vehicle.send_mavlink(premountmsg)
-        return False
-    elif GPIO.input(25) == GPIO.HIGH:
-        mountmsg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), 2000,0, 0, 0, 0, 0)
-        vehicle.send_mavlink(mountmsg)
-        return True
 
 def deploymentCheck(vehicle):
 
@@ -186,22 +172,6 @@ def setRudderBottomPWM(vehicle,pwm):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['RudderBottom']), pwm, 0, 0, 0, 0, 0)
     vehicle.send_mavlink(msg)
 
-
-def jitterer(vehicle):
-    # Create sensor object, communicating over the board's default I2C bus
-    i2c = board.I2C()   # uses board.SCL and board.SDA
-    bme680 = adafruit_bme680.Adafruit_BME680_I2C(i2c)
-    
-    # change this to match the location's pressure (hPa) at sea level
-    bme680.sea_level_pressure = 1013.25
-
-    jitterTemp = 40 #jitter temperature in Celsius
-
-    print("\nTemperature: %0.1f C" % bme680.temperature)
-
-    if bme680.temperature <= jitterTemp:
-        jitter(vehicle)
-
 def jitter(vehicle):
     i = 0
     trim = [1380, 1380, 1310, 1310, 2000, 1000]
@@ -244,7 +214,7 @@ def chuteReset(vehicle):
 
 def nodeDeploymentTest(vehicle,pwm):
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, int(CHANNELS['Deployment']), pwm,0, 0, 0, 0, 0)
-    print("Moving Deployment to: " + pwm)
+    print("Moving Deployment to: ", pwm)
     vehicle.send_mavlink(msg)
 
 def linearInterpolation(num_of_points, target_lat, target_lon, current_lat, current_lon, current_alt):
@@ -260,14 +230,6 @@ def changeModes(vehicle, left, right, top, bottom):
     vehicle.parameters['SERVO3_FUNCTION'] = top
     vehicle.parameters['SERVO4_FUNCTION'] = bottom
 
-def aileronsMode(vehicle):
-    vehicle.parameters['SERVO1_FUNCTION'] = 4
-    vehicle.parameters['SERVO2_FUNCTION'] = 4
-    vehicle.parameters['SERVO3_FUNCTION'] = 0
-    vehicle.parameters['SERVO4_FUNCTION'] = 0
-
-    setRudderTopPWM(vehicle,'trim')
-    setRudderBottomPWM(vehicle,'trim')
 
 def diveMode(vehicle):
     # left elevon (aileron function)
