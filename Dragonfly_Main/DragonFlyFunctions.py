@@ -61,6 +61,11 @@ def initializeServos(vehicle):
     vehicle.parameters['SERVO7_REVERSED'] = 0
     vehicle.parameters['SERVO7_FUNCTION'] = 0
 
+    # Set PID
+    vehicle.parameters['RLL_RATE_P'] = .15
+    vehicle.parameters['PTCH_RATE_P'] = .3
+    vehicle.parameters['PTCH_RATE_D'] = .01
+
 
 def deploymentCheck(vehicle):
 
@@ -248,6 +253,11 @@ def diveMode(vehicle):
     vehicle.parameters['SERVO4_REVERSED'] = 1
     vehicle.parameters['SERVO4_FUNCTION'] = 4
 
+    # change PID
+    vehicle.parameters['RLL_RATE_P'] = .15
+    vehicle.parameters['PTCH_RATE_P'] = .3
+    vehicle.parameters['PTCH_RATE_D'] = .01
+
 
 def glideMode(vehicle):
     # right elevon
@@ -265,3 +275,18 @@ def glideMode(vehicle):
     # bottom rudder
     vehicle.parameters['SERVO4_REVERSED'] = 1
     vehicle.parameters['SERVO4_FUNCTION'] = 21
+
+    # change PID
+    vehicle.parameters['PTCH_RATE_P'] = .3
+    vehicle.parameters['PTCH_RATE_D'] = .01
+    vehicle.parameters['RLL_RATE_P'] = .15
+
+def changePID(vehicle, ptchP, ptchI, ptchD, rllP, rllI, rllD):
+    # NOT USED IN FLIGHT
+
+    vehicle.parameters['PTCH_RATE_P'] = ptchP
+    vehicle.parameters['PTCH_RATE_I'] = ptchI
+    vehicle.parameters['PTCH_RATE_D'] = ptchD
+    vehicle.parameters['RLL_RATE_P'] = rllP
+    vehicle.parameters['RLL_RATE_I'] = rllI
+    vehicle.parameters['RLL_RATE_D'] = rllD

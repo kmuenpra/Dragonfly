@@ -74,7 +74,9 @@ def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
     wind_speed=[]
 
     #read sounding file and extract data
-    with open ("NASA_sounding_data/soundings/predict_" + opt + "_sound.txt", "r") as f:
+    with open ("NASA_files/sounding.txt", "r") as f:
+        
+        # MAKE SURE FORMAT IS SAME AS EXAMPLES
         next(f)
         winds_aloft = f.read().split('\n')
         for i in winds_aloft:
@@ -86,6 +88,7 @@ def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
             wind_direction.append(float(array[2]))
             wind_speed.append(float(array[3]))
 
+    # CHECK FOR WHICH COLUMN IS WHICH
     altitude = np.array(altitude) * ft_to_m #m
     wind_direction = np.array(wind_direction) #deg
     wind_speed = np.array(wind_speed) * kts_to_m_s #m/s
@@ -97,12 +100,11 @@ def getSoundingDataAndTargetCoord(opt, useCustomWaypoints):
     longitude = []
 
     #read target coordinate and extract data
-    if useCustomWaypoints:
-        targetFileName = "Custom_waypoints/targetsWL.txt"
-    else:
-        targetFileName = "NASA_waypoints/targets/predict_" +  opt + "_targets.txt"
+    targetFileName = "NASA_files/targets.txt"
 
     with open (targetFileName, "r") as f:
+
+        # MAKE SURE FORMAT IS SAME AS EXAMPLES
         next(f)
         waypointsRaw = f.read().split('\n')
         for i in waypointsRaw:
@@ -328,12 +330,11 @@ def findOptimalWaypoint(waypointSuccesses, opt, useCustomWaypoints, currentPosit
         #print("Before", optimal_waypoint_idx)
 
         #read target coordinate and extract data
-        if useCustomWaypoints:
-            targetFileName = "Custom_waypoints/targetsWL.txt"
-        else:
-            targetFileName = "NASA_waypoints/targets/predict_" +  opt + "_targets.txt"
+        targetFileName = "NASA_files/targets.txt"
             
         with open (targetFileName, "r") as f:
+
+            # MAKE SURE FORMAT IS SAME AS EXAMPLES
             next(f)
             waypointsRaw = f.read().split('\n')
             for i in waypointsRaw:

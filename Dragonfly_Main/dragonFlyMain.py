@@ -1,6 +1,6 @@
 import DragonFlyFunctions as dff
 import Waypoint_Select_Optimization.WaypointSelectFunctions as waypointSelect
-#import RPi.GPIO as GPIO #for raspberryPi
+import RPi.GPIO as GPIO #for raspberryPi
 import numpy as np
 from dronekit import connect, LocationGlobal, VehicleMode, Command, mavutil
 import time
@@ -95,7 +95,7 @@ while not mounted:
 '''
 
 # --- Ascent ---
-origAltitude = 1400     # average altitude of New Mexico [m]
+altitude = float(vehicle.location.global_frame.alt)
 
 while not deployed:
     prevAltitude = altitude
@@ -153,6 +153,7 @@ while deployed:
     '''
     #[REAL]
 
+    # checks if altitude is greater than 9000m (30000 ft) and 
     if altitude > 9000 and (vehicle.gps_0.fix_type == 2 or vehicle.gps_0.fix_type == 3):
 
         #Retrieve current position from GPS module
@@ -201,7 +202,7 @@ while deployed:
 
         print(" Define/add new commands.")
         for waypoint in waypoints_locations:                                                                                                    #lat          #lon          #alt
-            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, waypoint[0], waypoint[1], waypoint[2]))
+            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, waypoint.lat, waypoint.lon, waypoint.alt))
 
         print(" Upload new commands to vehicle")
         cmds.upload()
