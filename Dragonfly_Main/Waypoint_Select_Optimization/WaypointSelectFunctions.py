@@ -4,7 +4,7 @@
 
 #import statements
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import datetime
 
 """
@@ -281,7 +281,9 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
                 break
 
         waypointIdx += 1
-            
+
+        # comment out plotted things
+        '''
         if plotTraj:
             nFig += 1
             fig = plt.figure(nFig)
@@ -295,7 +297,8 @@ def simulate(altitude, wind_velocity, predictedTrajectory, waypoints, initialPos
             ax.set_zlabel("Altitude [m]")
             plt.plot(0, 0, 0, 'ro')
             ax.quiver(xPositionSounding, yPositionSounding, zPositionSounding, soundingArrayX, soundingArrayY, 0, length = 500, color = 'orange')
-        
+        '''
+    # comment out plotted things 
     plt.show()
 
     return np.array(waypointSuccesses)
