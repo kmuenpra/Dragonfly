@@ -66,7 +66,7 @@ def write():
     writer.writerow(node_lat,', ', node_lon,', ', node_alt,', ', vehicle.velocity,', ', vehicle.attitude,', ', vehicle.battery,', ', deployed,', ', glide,', ', dive,', ', chute)
 '''
 
-
+'''
 # --- Simulate Altitude --- (REMOVE BEFORE FLIGHT)
 origAltitude = 1220     # altitude of Ft Sumner [m]
 def altitudeSim(prev):
@@ -80,8 +80,8 @@ def altitudeSim(prev):
     print("Altitude: ", altitude)
     return altitude
 altitude = origAltitude
-
 '''
+
 # --- Mounting ---
 # NEED TO HAVE MOUNTING PINS IN
 GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering  
@@ -92,7 +92,7 @@ while not mounted:
     if GPIO.input(25) == GPIO.HIGH:
         dff.nodeDeploymentTest(vehicle,2000)
         mounted = True
-'''
+
 
 # --- Ascent ---
 altitude = float(vehicle.location.global_frame.alt)
@@ -100,26 +100,26 @@ altitude = float(vehicle.location.global_frame.alt)
 while not deployed:
     prevAltitude = altitude
 
+    '''
     #[SIM]
     altitude = altitudeSim(altitude)
     #[SIM]
+    '''
 
     #[REAL]
-    '''
     # get altitude from GPS if it is not disconnected
     if vehicle.gps_0.fix_type != 0:
         altitude = vehicle.location.global_frame.alt
 
         # if node hasn't deployed and altitude dropping, deploy parachute
-        if falling == True & altitude < prevAltitude & altitude < (1000 + origAltitude):
+        if falling == True & altitude < prevAltitude & altitude < 1000:
             deployed = True
             dff.chuteDeploy()
             deployed = True
-        elif altitude < prevAltitude & altitude < (1000 + origAltitude):
+        elif altitude < prevAltitude & altitude < 1000:
             falling = True
         else:
             falling = False
-    '''
     #[REAL]
     
     # alt when temperature drops below 0 in sounding files
@@ -137,20 +137,20 @@ print("Deployed!")
 
 # --- Descent ---
 while deployed:
+    '''
     #[SIM]
     altitude = altitudeSim(altitude)
     #[SIM]
+    '''
 
     if not dive:
         dff.diveMode(vehicle)
         dive = True
 
     #[REAL]
-    '''
     # get altitude from GPS if it is not disconnected
     if vehicle.gps_0.fix_type != 0:
         altitude = vehicle.location.global_frame.alt
-    '''
     #[REAL]
 
     # checks if altitude is greater than 9000m (30000 ft) and 
@@ -220,7 +220,7 @@ while deployed:
 
     
     # deploy parachute at 500 meters (1600 ft) above original altitude (avg of NM)
-    if altitude < (500 + origAltitude):
+    if altitude < 500:
         dff.chuteDeploy(vehicle)
         print("Chute Deployed")
 
