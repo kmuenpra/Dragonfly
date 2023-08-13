@@ -116,15 +116,17 @@ while not deployed:
     if vehicle.gps_0.fix_type != 0:
         altitude = vehicle.location.global_frame.alt
 
+        '''
         # if node hasn't deployed and altitude dropping, deploy parachute
         if falling == True and altitude < prevAltitude and altitude < 1000:
             deployed = True
-            dff.chuteDeploy()
+            dff.chuteDeploy(vehicle)
             deployed = True
         elif altitude < prevAltitude and altitude < 1000:
             falling = True
         else:
             falling = False
+        '''
     #[REAL]
 
     # write()
