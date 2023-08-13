@@ -100,6 +100,11 @@ altitude = float(vehicle.location.global_frame.alt)
 while not deployed:
     prevAltitude = altitude
 
+    # alt when temperature drops below 0 in sounding files
+    if altitude > 6000:
+        deployed = dff.deploymentCheck(vehicle)
+        dff.jitter(vehicle)
+
     '''
     #[SIM]
     altitude = altitudeSim(altitude)
@@ -112,20 +117,15 @@ while not deployed:
         altitude = vehicle.location.global_frame.alt
 
         # if node hasn't deployed and altitude dropping, deploy parachute
-        if falling == True & altitude < prevAltitude & altitude < 1000:
+        if falling == True and altitude < prevAltitude and altitude < 1000:
             deployed = True
             dff.chuteDeploy()
             deployed = True
-        elif altitude < prevAltitude & altitude < 1000:
+        elif altitude < prevAltitude and altitude < 1000:
             falling = True
         else:
             falling = False
     #[REAL]
-    
-    # alt when temperature drops below 0 in sounding files
-    if altitude > 6000:
-        dff.jitter(vehicle)
-        deployed = dff.deploymentCheck(vehicle)
 
     # write()
 
